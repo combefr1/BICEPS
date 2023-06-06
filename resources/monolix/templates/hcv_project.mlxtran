@@ -1,0 +1,78 @@
+<DATAFILE>
+
+[FILEINFO]
+file = 'data/hcv_data.txt'
+delimiter = tab
+header = {ID, TIME, T_END, Y, CENS}
+
+[CONTENT]
+ID = {use=identifier}
+TIME = {use=time}
+T_END = {use=regressor}
+Y = {use=observation, name=Y, type=continuous}
+CENS = {use=censored}
+
+<MODEL>
+
+[INDIVIDUAL]
+input = {s_pop, omega_s, d_pop, omega_d, beta_pop, omega_beta, delta_pop, omega_delta, p_pop, c_pop, omega_c, eta_pop, epsilon_pop, omega_epsilon, omega_eta}
+
+DEFINITION:
+s = {distribution=logNormal, typical=s_pop, sd=omega_s}
+d = {distribution=logNormal, typical=d_pop, sd=omega_d}
+beta = {distribution=logNormal, typical=beta_pop, sd=omega_beta}
+delta = {distribution=logNormal, typical=delta_pop, sd=omega_delta}
+p = {distribution=logNormal, typical=p_pop, no-variability}
+c = {distribution=logNormal, typical=c_pop, sd=omega_c}
+eta = {distribution=logitNormal, typical=eta_pop, sd=omega_eta}
+epsilon = {distribution=logitNormal, typical=epsilon_pop, sd=omega_epsilon}
+
+[LONGITUDINAL]
+input = {a}
+
+file = 'model/hcvNeumann98_model.txt'
+
+DEFINITION:
+Y = {distribution=normal, prediction=LVL, errorModel=constant(a)}
+
+<FIT>
+data = Y
+model = Y
+
+<PARAMETER>
+a = {value=1, method=MLE}
+beta_pop = {value=5e-05, method=MLE}
+c_pop = {value=5, method=MLE}
+d_pop = {value=1, method=MLE}
+delta_pop = {value=0.05, method=MLE}
+epsilon_pop = {value=0.7, method=MLE}
+eta_pop = {value=0.9, method=MLE}
+omega_beta = {value=1, method=MLE}
+omega_c = {value=1, method=MLE}
+omega_d = {value=1, method=MLE}
+omega_delta = {value=1, method=MLE}
+omega_epsilon = {value=1, method=MLE}
+omega_eta = {value=1, method=MLE}
+omega_s = {value=1, method=MLE}
+p_pop = {value=20, method=MLE}
+s_pop = {value=1000, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(run = false,method = ImportanceSampling)
+plotResult(method = {outputplot, indfits, obspred, vpc, npc, residualsscatter, residualsdistribution, parameterdistribution, covariatemodeldiagnosis, randomeffects, covariancemodeldiagnosis, blq, predictiondistribution, likelihoodcontribution, categorizedoutput, saemresults, condmeanresults, fisher, likelihoodresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = 'hcv_project'
+
+POPULATION:
+variability = firstStage
+
+INDIVIDUAL:
+nbsimulatedparameters = 9
+

@@ -1,0 +1,43 @@
+DESCRIPTION: Neumann-Lam model (Neumann et al., Science, 282, 1998)
+Variables
+- TC is the number of target cells, 
+- IC is the number of productively infected cells, 
+- VL is the viral load
+
+The possible effects of IFN in this model are to reduce 
+- either the production of virions from infected cells by a fraction (1 - epsilon) 
+- or the de novo rate of infection by a fraction (1 - eta).
+
+Parameters:
+- Target cells are produced at rate s and die with death rate constant d.
+- Cells become infected with de novo infection rate constant beta, once infected, die with rate constant delta
+- Hepatitis C virions are produced by infected cells at an average rate of p virions per cell per day and are cleared with clearance rate constant c
+
+[LONGITUDINAL]
+input = {s, d, beta, delta, p, c, eta, epsilon, T_end}
+T_end = {use = regressor}
+
+EQUATION:
+; Initial conditions
+t0      = 0
+TC_0 = delta*c/(beta*p)
+IC_0  = (s-d*TC_0)/delta
+VL_0 = p*IC_0/c
+
+; Before IFN both eta and epsilon equal 0. Once therapy is initiated, both are >0
+; inhibition before and after the end of treatment
+if t > T_end
+ coeff = 0
+else
+ coeff = 1
+end
+
+; Dynamical viral model 
+ddt_TC = s - d*TC - beta*(1-coeff*eta)*TC*VL
+ddt_IC  = beta*(1-coeff*eta)*TC*VL - delta*IC
+ddt_VL = (1-coeff*epsilon)*p*IC - c*VL
+
+LVL = log10(max(VL,1)) ; to have LVL positive
+
+OUTPUT:
+output = LVL

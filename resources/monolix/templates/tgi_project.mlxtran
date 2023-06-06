@@ -1,0 +1,71 @@
+<DATAFILE>
+
+[FILEINFO]
+file = 'data/tgi_data.csv'
+delimiter = comma
+header = {id, time, y, amount}
+
+[CONTENT]
+id = {use=identifier}
+time = {use=time}
+y = {use=observation, name=y, type=continuous}
+amount = {use=amount}
+
+<MODEL>
+
+[INDIVIDUAL]
+input = {K_pop, KDE_pop, kPQ_pop, kQpP_pop, lambdaP_pop, omega_lambdaP, gamma_pop, omega_gamma, deltaQP_pop, omega_deltaQP, PT0_pop, omega_PT0, QT0_pop, omega_QT0}
+
+DEFINITION:
+K = {distribution=logNormal, typical=K_pop, no-variability}
+KDE = {distribution=logNormal, typical=KDE_pop, no-variability}
+kPQ = {distribution=logNormal, typical=kPQ_pop, no-variability}
+kQpP = {distribution=logNormal, typical=kQpP_pop, no-variability}
+lambdaP = {distribution=logNormal, typical=lambdaP_pop, sd=omega_lambdaP}
+gamma = {distribution=logNormal, typical=gamma_pop, sd=omega_gamma}
+deltaQP = {distribution=logNormal, typical=deltaQP_pop, sd=omega_deltaQP}
+PT0 = {distribution=logNormal, typical=PT0_pop, sd=omega_PT0}
+QT0 = {distribution=logNormal, typical=QT0_pop, sd=omega_QT0}
+
+[LONGITUDINAL]
+input = {b}
+
+file = 'model/tgi_model.txt'
+
+DEFINITION:
+y = {distribution=normal, prediction=PSTAR, errorModel=proportional(b)}
+
+<FIT>
+data = y
+model = y
+
+<PARAMETER>
+KDE_pop = {value=0.5, method=MLE}
+K_pop = {value=100, method=FIXED}
+PT0_pop = {value=3, method=MLE}
+QT0_pop = {value=40, method=MLE}
+b = {value=0.3, method=MLE}
+deltaQP_pop = {value=0.01, method=MLE}
+gamma_pop = {value=1.4, method=MLE}
+kPQ_pop = {value=0.02, method=MLE}
+kQpP_pop = {value=0.003, method=MLE}
+lambdaP_pop = {value=0.15, method=MLE}
+omega_PT0 = {value=1, method=MLE}
+omega_QT0 = {value=1, method=MLE}
+omega_deltaQP = {value=1, method=MLE}
+omega_gamma = {value=1, method=MLE}
+omega_lambdaP = {value=1, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(method = ImportanceSampling)
+plotResult(method = {outputplot, indfits, obspred, vpc, npc, residualsscatter, residualsdistribution, parameterdistribution, covariatemodeldiagnosis, randomeffects, covariancemodeldiagnosis, blq, predictiondistribution, likelihoodcontribution, categorizedoutput, saemresults, condmeanresults, fisher, likelihoodresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = 'tgi_project'
+

@@ -1,0 +1,61 @@
+DESCRIPTION: model for the long-term dynamic of the viral load and CD4 count in HIV patients with antiretroviral treatment
+Model presented in the publication from Lavielle et al. 
+"Maximum Likelihood Estimation of Long-Term HIV Dynamic Models and Antiviral Response"
+Biometrics, 67(1), 250–259.
+
+The model assumes that target (non-infected) CD4 cells (TNI) are generated through the hematopoietic differentiation process at a constant rate lambda. The target cells are infected by the virus at a rate gamma0 per susceptible cell and virion. Following Funk et al. (2001), not all CD4 cells actively produce virus upon successful infection. Only a proportion f of infected cells are actively CD4 cells (TA), and a proportion (1−f) are latently infected CD4 cells (TL). Latently infected CD4 cells become activated at a rate alphaL. Target non-infected CD4 cells die at a rate muNI, latently infected CD4 cells die at a rate muL and actively infected cells die at a rate muA. Actively infected CD4 cells produce virus at a rate p0 per infected cell. The viruses are cleared at a rate muV.
+The RTI (reverse transcriptase inverse) antiviral therapy prevents susceptible cells from becoming infected through inhibition of the transcription of the viral RNA. etaRTI denotes the proportion of susceptible cells prevented to be infected. The PI (protease inhibitor) antiviral therapy leads to the production of noninfectious viruses. etaPI represents the proportion of produced viruses that are non-infectious.
+
+
+Modeled entities (ODE variables): 
+- TNI Concentration of target non-infected CD4 cells [cells/mm3]
+- TL  Concentration of latently infected CD4 cells   [cells/mm3]
+- TA  Concentration of actively infected CD4 cells   [cells/mm3]
+- VNI Concentration of non-infectious viruses        [cp/mm3]
+- VI  Concentration of infectious viruses            [cp/mm3]
+
+The measured viral load is the total viral load V = VI + VNI.
+The measured CD4 cell count is the total T = TNI + TL + TA.
+
+Parameters:
+- lambda [cells/mm3/day] Rate of production of infected CD4 cells
+- gamma0                 Infection rate of CD4 cell per virion
+- muNI	 [1/day]	     Death rate of uninfected CD4 cells
+- muL	 [1/day]	     Death rate for latently infected CD4 cells
+- muA	 [1/day]         Death rate for actively infected CD4 cells
+- muV	 [1/day]	     Death rate of virions
+- p0                     Number of virions production by CD4 cell
+- alphaL [1/day]         Activation rate of latently infected CD4 cells
+- f		 [unitless]      Proportion of infected CD4 cells that become activated
+- etaRTI [unitless]      Efficacy of RTI (proportion of susceptible cells prevented to be infected)
+- etaPI	 [unitless]      Efficacy of PI (proportion of produced viruses that are non-infectious)
+
+[LONGITUDINAL]
+input = {lambda, gamma0, muNI, muL, muA, muV, p0, alphaL, f, etaRTI, etaPI}
+
+EQUATION:
+gamma = (1-etaRTI)*gamma0
+
+; Initial conditions
+; Variables are assumed to be at steady state
+t0    = 0
+TNI_0 = (muA*muV*(alphaL+muL))/(gamma0*p0*(alphaL+muL*f))
+VI_0  = (lambda-TNI_0*muNI)/(gamma0*TNI_0)
+TA_0  = muV*VI_0/p0
+TL_0  = (1-f)*gamma0*TNI_0*VI_0/(alphaL+muL)
+VNI_0 = 0
+
+; Dynamical model
+ddt_TNI = lambda-gamma*TNI*VI-muNI*TNI
+ddt_TL  = (1-f)*gamma*TNI*VI-alphaL*TL-muL*TL
+ddt_TA  = f*gamma*TNI*VI+alphaL*TL-muA*TA
+ddt_VI  = (1-etaPI)*p0*TA-muV*VI
+ddt_VNI = etaPI*p0*TA-muV*VNI
+
+; The measured viral load is the total viral load V = VNI +VI
+; The measured CD4 cell count is the total T = TNI + TL + TA.
+LVL = log10(max((VNI+VI)*1000,1))
+TTOT = TNI+TL+TA
+
+OUTPUT:
+output = {LVL, TTOT}

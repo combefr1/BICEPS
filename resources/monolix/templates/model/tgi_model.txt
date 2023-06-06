@@ -1,0 +1,43 @@
+DESCRIPTION: Tumor Growth Inhibition (TGI) model proposed by Ribba et al
+A tumor growth inhibition model for low-grade glioma treated with chemotherapy or radiotherapy. Clinical Cancer Research, 18(18), 5071-5080, 2012.
+
+Variables 
+- PT: proliferative equiescent tissue
+- QT: nonproliferative equiescent tissue
+- QP: damaged quiescent cells 
+- C:  concentration of a virtual drug encompassing the 3 chemotherapeutic components of the PCV regimen
+
+Parameters
+- K      : maximal tumor size (should be fixed a priori)
+- KDE    : the rate constant for the decay of the PCV concentration in plasma
+- kPQ    : the rate constant for transition from proliferation to quiescence
+- kQpP   : the rate constant for transfer from damaged quiescent tissue to proliferative tissue 
+- lambdaP: the rate constant of growth for the proliferative tissue
+- gamma  : the rate of damages in proliferative and quiescent tissue
+- deltaQP: the rate constant for elimination of the damaged quiescent tissue
+- PT0    : initial proliferative equiescent tissue
+- QT0    : initial nonproliferative equiescent tissue
+
+[LONGITUDINAL]
+input = {K, KDE, kPQ, kQpP, lambdaP, gamma, deltaQP, PT0, QT0}
+
+PK:
+depot(target=C)
+
+EQUATION:
+; Initial conditions
+t0    = 0
+C_0   = 0
+PT_0  = PT0
+QT_0  = QT0
+QP_0  = 0
+
+; Dynamical model
+PSTAR   = PT + QT + QP
+ddt_C   = -KDE*C
+ddt_PT  = lambdaP*PT*(1-PSTAR/K) + kQpP*QP - kPQ*PT - gamma*KDE*PT*C
+ddt_QT  = kPQ*PT - gamma*KDE*QT*C
+ddt_QP  = gamma*KDE*QT*C - kQpP*QP - deltaQP*QP
+
+OUTPUT:
+output = PSTAR

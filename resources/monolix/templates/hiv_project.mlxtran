@@ -1,0 +1,99 @@
+<DATAFILE>
+
+[FILEINFO]
+file = 'data/hiv_data.txt'
+delimiter = tab
+header = {ID, TIME, Y_NCENS, Y, CENS, YTYPE, TREATMENT}
+
+[CONTENT]
+ID = {use=identifier}
+TIME = {use=time}
+Y = {use=observation, name={y1, y2}, yname={'1', '2'}, type={continuous, continuous}}
+CENS = {use=censored}
+YTYPE = {use=observationtype}
+TREATMENT = {use=covariate, type=categorical}
+
+<MODEL>
+
+[COVARIATE]
+input = TREATMENT
+
+TREATMENT = {type=categorical, categories={A, B, C}}
+
+[INDIVIDUAL]
+input = {lambda_pop, omega_lambda, gamma0_pop, muNI_pop, muL_pop, muA_pop, muV_pop, p0_pop, omega_p0, alphaL_pop, omega_alphaL, f_pop, omega_f, etaRTI_pop, etaPI_pop, omega_etaRTI, omega_etaPI, TREATMENT, beta_etaRTI_TREATMENT_B, beta_etaRTI_TREATMENT_C, beta_etaPI_TREATMENT_B, beta_etaPI_TREATMENT_C, omega_muV, omega_muA, omega_muL, omega_muNI}
+
+TREATMENT = {type=categorical, categories={A, B, C}}
+
+DEFINITION:
+lambda = {distribution=logNormal, typical=lambda_pop, sd=omega_lambda}
+gamma0 = {distribution=logNormal, typical=gamma0_pop, no-variability}
+muNI = {distribution=logNormal, typical=muNI_pop, sd=omega_muNI}
+muL = {distribution=logNormal, typical=muL_pop, sd=omega_muL}
+muA = {distribution=logNormal, typical=muA_pop, sd=omega_muA}
+muV = {distribution=logNormal, typical=muV_pop, sd=omega_muV}
+p0 = {distribution=logNormal, typical=p0_pop, sd=omega_p0}
+alphaL = {distribution=logNormal, typical=alphaL_pop, sd=omega_alphaL}
+f = {distribution=logitNormal, typical=f_pop, sd=omega_f}
+etaRTI = {distribution=logitNormal, typical=etaRTI_pop, covariate=TREATMENT, coefficient={0, beta_etaRTI_TREATMENT_B, beta_etaRTI_TREATMENT_C}, sd=omega_etaRTI}
+etaPI = {distribution=logitNormal, typical=etaPI_pop, covariate=TREATMENT, coefficient={0, beta_etaPI_TREATMENT_B, beta_etaPI_TREATMENT_C}, sd=omega_etaPI}
+
+[LONGITUDINAL]
+input = {a1, a2, b2}
+
+file = 'model/hiv_model.txt'
+
+DEFINITION:
+y1 = {distribution=normal, prediction=LVL, errorModel=constant(a1)}
+y2 = {distribution=normal, prediction=TTOT, errorModel=combined1(a2, b2)}
+
+<FIT>
+data = {y1, y2}
+model = {y1, y2}
+
+<PARAMETER>
+a1 = {value=1, method=MLE}
+a2 = {value=1, method=MLE}
+alphaL_pop = {value=0.0001, method=MLE}
+b2 = {value=0.3, method=MLE}
+beta_etaPI_TREATMENT_B = {value=0, method=MLE}
+beta_etaPI_TREATMENT_C = {value=0, method=MLE}
+beta_etaRTI_TREATMENT_B = {value=0, method=MLE}
+beta_etaRTI_TREATMENT_C = {value=0, method=MLE}
+etaPI_pop = {value=0.9, method=MLE}
+etaRTI_pop = {value=0.7, method=MLE}
+f_pop = {value=0.45, method=MLE}
+gamma0_pop = {value=0.03, method=MLE}
+lambda_pop = {value=20, method=MLE}
+muA_pop = {value=2.7, method=MLE}
+muL_pop = {value=0.07, method=MLE}
+muNI_pop = {value=0.07, method=MLE}
+muV_pop = {value=300, method=MLE}
+omega_alphaL = {value=1, method=MLE}
+omega_etaPI = {value=1, method=MLE}
+omega_etaRTI = {value=1, method=MLE}
+omega_f = {value=1, method=MLE}
+omega_lambda = {value=1, method=MLE}
+omega_muA = {value=1, method=MLE}
+omega_muL = {value=1, method=MLE}
+omega_muNI = {value=1, method=MLE}
+omega_muV = {value=1, method=MLE}
+omega_p0 = {value=1, method=MLE}
+p0_pop = {value=6000, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(run = false,method = ImportanceSampling)
+plotResult(run = false,method = {outputplot, indfits, obspred, vpc, npc, residualsscatter, residualsdistribution, parameterdistribution, covariatemodeldiagnosis, randomeffects, covariancemodeldiagnosis, blq, predictiondistribution, likelihoodcontribution, categorizedoutput, saemresults, condmeanresults, fisher, likelihoodresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = 'hiv_project'
+
+INDIVIDUAL:
+nbsimulatedparameters = 5
+

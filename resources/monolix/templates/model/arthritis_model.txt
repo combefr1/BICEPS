@@ -1,0 +1,53 @@
+DESCRIPTION: arthritis development model of Koch
+
+Variables
+- I2: concentration of exogenous IL-2,
+- TA: concentration of PHA-activated T-cells expressing high affinity IL-2r,
+- TD: concentration of IL-Zstimulated T-cells entering the cell division cycle,
+- TR: concentration of 'resting' T-cells with no binding sites to IL-2. 
+
+Parameters
+- alphaI2: decay rate of IL-2 in the medium, ~0 molec/hr in fetal calf serum.
+- nI2T: number of IL-2 molecules internalized by T-cells via IL-2r, 2000-5000 per T-cell.
+- bTI2: rate of commitment of T-cells to cell division, 10^-l2 - l0^-11 ml/(molec. x hr)
+- starI2 is the saturation concentration for IL-2, 6 x 10^10 molec/ml
+- rho: number of cells produced when a T-cell divides, 2.
+- tauD : duration of the cell division cycle, 8-24 hrs.
+- alphaAR is the decay rate in IL-2 reactivity of activated T-cells, 0.02 hr^-1.
+- alphaR is the decay rate in the non-cycling T-cell population, 0.01-0.04 hr^-1 
+
+[LONGITUDINAL]
+input = {tauD, tauS}
+
+EQUATION:
+  
+; Parameter definition
+alphaI2 = 0 
+nI2T = 4755  
+bTI2 = 1.8e-11
+starI2 = 6.6e10
+rho = 2  
+alphaAR = 6.6e-2
+alphaR = 1.5e-2 
+
+
+; Initial conditions
+t0   = 0  ; t0 is a reserved keyword (initiation of therapy)
+I2_0 = 2e10
+TA_0 = 3.8e5
+TD_0 = 0
+TR_0 = 1.2e5
+  
+; Dynamical equations  
+; IL-2 dynamics - natural death and internalization by T-cells expressing IL-2r
+ddt_I2 = -alphaI2*I2 - nI2T*bTI2*(I2/(I2/starI2+1))*TA
+ddt_TA = rho*bTI2*(delay(I2,tauD)/(delay(I2,tauD)/starI2+1))*delay(TA,tauD) - bTI2*(delay(I2,tauS)/(delay(I2,tauS)/starI2+1))*delay(TA,tauS) - alphaAR*TA
+ddt_TD = bTI2*delay(I2,tauS)*delay(TA,tauS)/(delay(I2,tauS)/starI2+1) - bTI2*delay(I2,tauD)*delay(TA,tauD)/(delay(I2,tauD)/starI2+1)
+ddt_TR = alphaAR*TA - alphaR*TR
+
+; The measurement is whole T-cell population 
+TV = TA + TD + TR
+
+OUTPUT:
+output = TV
+

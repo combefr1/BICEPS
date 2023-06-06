@@ -1,0 +1,53 @@
+<DATAFILE>
+
+[FILEINFO]
+file = 'data/arthritis_data.txt'
+delimiter = comma
+header = {id, time, y}
+
+[CONTENT]
+id = {use=identifier}
+time = {use=time}
+y = {use=observation, name=y, type=continuous}
+
+<MODEL>
+
+[INDIVIDUAL]
+input = {tauD_pop, omega_tauD, tauS_pop, omega_tauS}
+
+DEFINITION:
+tauD = {distribution=logNormal, typical=tauD_pop, sd=omega_tauD}
+tauS = {distribution=logNormal, typical=tauS_pop, sd=omega_tauS}
+
+[LONGITUDINAL]
+input = {b}
+
+file = 'model/arthritis_model.txt'
+
+DEFINITION:
+y = {distribution=normal, prediction=TV, errorModel=proportional(b)}
+
+<FIT>
+data = y
+model = y
+
+<PARAMETER>
+b = {value=0.3, method=MLE}
+omega_tauD = {value=1, method=MLE}
+omega_tauS = {value=1, method=MLE}
+tauD_pop = {value=10, method=MLE}
+tauS_pop = {value=10, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(method = ImportanceSampling)
+plotResult(method = {outputplot, indfits, obspred, vpc, npc, residualsscatter, residualsdistribution, parameterdistribution, covariatemodeldiagnosis, randomeffects, covariancemodeldiagnosis, blq, predictiondistribution, likelihoodcontribution, categorizedoutput, saemresults, condmeanresults, fisher, likelihoodresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = 'arthritis_projet'
+

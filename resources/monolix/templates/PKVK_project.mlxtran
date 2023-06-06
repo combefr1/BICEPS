@@ -1,0 +1,90 @@
+<DATAFILE>
+
+[FILEINFO]
+file = 'data/PKVK_data.txt'
+delimiter = tab
+header = {ID, Time, DV, YTYPE, DOSE}
+
+[CONTENT]
+ID = {use=identifier}
+Time = {use=time}
+DV = {use=observation, name={y_1, y_2}, yname={'1', '2'}, type={continuous, continuous}}
+YTYPE = {use=observationtype}
+DOSE = {use=amount}
+
+<MODEL>
+
+[INDIVIDUAL]
+input = {Tlag_pop, omega_Tlag, Tk0_pop, omega_Tk0, Vol_pop, omega_Vol, Cl_pop, omega_Cl, ke0_pop, omega_ke0, IC50_pop, omega_IC50, gamma_pop, omega_gamma, s_pop, omega_s, beta_pop, omega_beta, p_pop, c_pop, omega_c, d_pop, omega_d, delta_pop, omega_delta}
+
+DEFINITION:
+Tlag = {distribution=logNormal, typical=Tlag_pop, sd=omega_Tlag}
+Tk0 = {distribution=logNormal, typical=Tk0_pop, sd=omega_Tk0}
+Vol = {distribution=logNormal, typical=Vol_pop, sd=omega_Vol}
+Cl = {distribution=logNormal, typical=Cl_pop, sd=omega_Cl}
+ke0 = {distribution=logNormal, typical=ke0_pop, sd=omega_ke0}
+IC50 = {distribution=logNormal, typical=IC50_pop, sd=omega_IC50}
+gamma = {distribution=logNormal, typical=gamma_pop, sd=omega_gamma}
+s = {distribution=logNormal, typical=s_pop, sd=omega_s}
+beta = {distribution=logNormal, typical=beta_pop, sd=omega_beta}
+p = {distribution=logNormal, typical=p_pop, no-variability}
+c = {distribution=logNormal, typical=c_pop, sd=omega_c}
+d = {distribution=logNormal, typical=d_pop, sd=omega_d}
+delta = {distribution=logNormal, typical=delta_pop, sd=omega_delta}
+
+[LONGITUDINAL]
+input = {a1, b1, a2}
+
+file = 'model/PKVK_model.txt'
+
+DEFINITION:
+y_1 = {distribution=normal, prediction=Cc, errorModel=combined1(a1, b1)}
+y_2 = {distribution=normal, prediction=lVL, errorModel=constant(a2)}
+
+<FIT>
+data = {y_1, y_2}
+model = {y_1, y_2}
+
+<PARAMETER>
+Cl_pop = {value=15, method=MLE}
+IC50_pop = {value=1.5, method=MLE}
+Tk0_pop = {value=0.2, method=MLE}
+Tlag_pop = {value=0.01, method=MLE}
+Vol_pop = {value=1, method=MLE}
+a1 = {value=1, method=MLE}
+a2 = {value=1, method=MLE}
+b1 = {value=0.3, method=MLE}
+beta_pop = {value=5e-05, method=MLE}
+c_pop = {value=2, method=MLE}
+d_pop = {value=0.5, method=MLE}
+delta_pop = {value=1, method=MLE}
+gamma_pop = {value=2, method=MLE}
+ke0_pop = {value=1, method=MLE}
+omega_Cl = {value=1, method=MLE}
+omega_IC50 = {value=1, method=MLE}
+omega_Tk0 = {value=1, method=MLE}
+omega_Tlag = {value=1, method=MLE}
+omega_Vol = {value=1, method=MLE}
+omega_beta = {value=1, method=MLE}
+omega_c = {value=1, method=MLE}
+omega_d = {value=1, method=MLE}
+omega_delta = {value=1, method=MLE}
+omega_gamma = {value=1, method=MLE}
+omega_ke0 = {value=1, method=MLE}
+omega_s = {value=1, method=MLE}
+p_pop = {value=20, method=MLE}
+s_pop = {value=10000, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(method = ImportanceSampling)
+plotResult(method = {outputplot, indfits, obspred, vpc, npc, residualsscatter, residualsdistribution, parameterdistribution, covariatemodeldiagnosis, randomeffects, covariancemodeldiagnosis, blq, predictiondistribution, likelihoodcontribution, categorizedoutput, saemresults, condmeanresults, fisher, likelihoodresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = 'PKVK_project'
+

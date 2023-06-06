@@ -1,0 +1,59 @@
+DESCRIPTION:
+The administration is extravascular with a zero order process (duration Tk0) and a lag time (Tlag).
+The PK model has a central compartment (volume V1), a peripheral compartment 
+(volume V2, intercompartmental clearance Q), and a linear elimination (clearance Cl).
+
+[LONGITUDINAL]
+input = {Tlag, Tk0, Cl, V1, Q, V2, DOSE, beta_DOSE_Cl,beta_DOSE_Q, beta_DOSE_V2,  Base, Slope, MTT, GMA}
+DOSE = {use = regressor}
+;model was modified from library to add Dose as regressor(power model)
+PK:
+;dose effect
+DOSEref = 600 ;mg
+Cl_cov = (DOSE/DOSEref)^beta_DOSE_Cl
+Q_cov = (DOSE/DOSEref)^beta_DOSE_Q
+V2_cov = (DOSE/DOSEref)^beta_DOSE_V2
+
+Cl_dose		= Cl*Cl_cov
+Q_dose		= Q*Q_cov
+V2_dose		= V2*V2_cov
+
+; Parameter transformations 
+V=V1
+k12 = Q_dose/V1 
+k21 = Q_dose/V2_dose
+
+; PK model definition
+Cc = pkmodel(Tlag, Tk0, V, Cl = Cl_dose, k12, k21)
+LnCc = 0
+if(Cc>1)
+LnCc = log(Cc)
+end
+;define PD variables
+Ed = Slope*LnCc
+if(Slope*LnCc<0)
+Ed = 0
+end
+if(Slope*LnCc >=1)
+Ed = 0.9999
+end
+Kp=4/MTT
+Ktr=Kp
+Kcir=Kp
+
+EQUATION:
+t_0 = 0
+A3_0 = Base
+A4_0 = Base
+A5_0 = Base
+A6_0 = Base
+A7_0 = Base
+;reusing the compartment definition as in NONMEM code
+ddt_A3 = A3*(Kp*(1-Ed)*(Base/A7)^GMA)-Ktr*A3
+ddt_A4 = Ktr*A3 - Ktr*A4
+ddt_A5 = Ktr*A4 - Ktr*A5
+ddt_A6 = Ktr*A5 - Ktr*A6
+ddt_A7 = Ktr*A6 - Kcir*A7
+ANC = A7
+OUTPUT:
+output ={Cc,ANC}

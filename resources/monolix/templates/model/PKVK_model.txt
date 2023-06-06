@@ -1,0 +1,44 @@
+DESCRIPTION:  Example of a PKPD model defined by several ODE's
+  -  Zero order oral absorption with one compartment
+  -  Effect Compartment
+  -  Viral load model (Neumann-Lam model (Neumann et al., Science, 282, 1998))
+
+Variables
+- TC is the number of target cells, 
+- IC is the number of productively infected cells, 
+- VL is the viral load
+
+Parameters:
+- Target cells are produced at rate s and die with death rate constant d.
+- Cells become infected with de novo infection rate constant beta, once infected, die with rate constant delta
+- Virions are produced by infected cells at an average rate of p virions per cell per day and are cleared with clearance rate constant c
+- The effect of the inhibitor is to reduce the production of virions from infected cells by a fraction (1-INH) 
+
+[LONGITUDINAL]
+input = {Tlag, Tk0, Vol, Cl, ke0, IC50, gamma, s, d, beta, delta, p, c}
+
+EQUATION:
+; PK model
+{Cc,Ce} = pkmodel(Tlag, Tk0, k=Cl/Vol, V=Vol, ke0)
+
+; Inhibitor model
+r = (max(Ce,0)/IC50)^gamma
+INH = r/(1+r)
+
+; Initial conditions
+t0   = 0
+TC_0 = delta*c/(beta*p)
+IC_0 = (s-d*TC_0)/delta
+VL_0 = p*IC_0/c
+;Remaining initial values are null.
+
+; Dynamical viral model 
+ddt_TC = s - d*TC - beta*TC*VL
+ddt_IC = beta*TC*VL - delta*IC
+ddt_VL = (1-INH)*p*IC - c*VL
+
+lVL = log10(max(VL,1))
+
+OUTPUT:
+output = {Cc, lVL}
+table = {TC, IC} ;Additional outputs, not involved in model fitting.

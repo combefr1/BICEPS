@@ -1,0 +1,155 @@
+<DATAFILE>
+
+[FILEINFO]
+file='data/data_generated.csv'
+delimiter = comma
+header = {ID, original_id, TIME, obs, obsid, AMOUNT, WT1, RACE1, TAMO, DOSE}
+
+[CONTENT]
+ID = {use=identifier}
+TIME = {use=time}
+obs = {use=observation, name={yy1, yy2}, yname={'y1', 'y2'}, type={continuous, continuous}}
+obsid = {use=observationtype}
+AMOUNT = {use=amount}
+WT1 = {use=covariate, type=continuous}
+RACE1 = {use=covariate, type=categorical}
+TAMO = {use=covariate, type=categorical}
+DOSE = {use=regressor}
+
+<MODEL>
+
+[POPULATION]
+DEFINITION:
+Tlag_pop = {distribution=logNormal, typical=0.405, sd=0.202485}
+Cl_pop = {distribution=logNormal, typical=26.433, sd=13.2288}
+V1_pop = {distribution=logNormal, typical=239.492, sd=119.746}
+Q_pop = {distribution=logNormal, typical=81.5, sd=40.7554}
+V2_pop = {distribution=logNormal, typical=850.144, sd=425.072}
+beta_DOSE_Cl_pop = {distribution=normal, typical=-0.308, sd=0.153948}
+beta_DOSE_Q_pop = {distribution=normal, typical=-0.519, sd=0.258844}
+beta_DOSE_V2_pop = {distribution=normal, typical=-0.344, sd=0.173205}
+omega_Cl = {distribution=normal, typical=0.263, sd=4}
+omega_V1 = {distribution=normal, typical=0.925, sd=4}
+omega_Q = {distribution=normal, typical=0.259, sd=4}
+omega_V2 = {distribution=normal, typical=0.312, sd=4}
+beta_Cl_tTAMO_G_Concurrent_use_of_tamoxifen = {distribution=normal, typical=1, sd=1}
+beta_Q_logtWT1 = {distribution=normal, typical=1.216, sd=0.608276}
+beta_V2_logtWT1 = {distribution=normal, typical=0.773, sd=0.387298}
+Base_pop = {distribution=logNormal, typical=3.57, sd=4}
+Slope_pop = {distribution=logNormal, typical=0.0293, sd=0.0146629}
+MTT_pop = {distribution=logNormal, typical=107, sd=20}
+GMA_pop = {distribution=logNormal, typical=0.164, sd=0.0316228}
+omega_Base = {distribution=normal, typical=0.16, sd=4}
+omega_Slope = {distribution=normal, typical=0.098, sd=4}
+beta_Base_Asian_G_Asian = {distribution=normal, typical=1, sd=1}
+
+[COVARIATE]
+input = {WT1, RACE1, TAMO}
+
+RACE1 = {type=categorical, categories={Asian, Caucasian, Others}}
+TAMO = {type=categorical, categories={'Concurrent use of tamoxifen', 'No concurrent use of tamoxifen'}}
+
+DEFINITION:
+Asian =
+{
+  transform = RACE1, 
+  categories = {
+  G_Asian = Asian,
+  G_Caucasian_Others = {Caucasian, Others}  }, 
+  reference = G_Asian
+}
+
+tTAMO =
+{
+  transform = TAMO, 
+  categories = {
+  'G_Concurrent use of tamoxifen' = {'Concurrent use of tamoxifen'},
+  'G_No concurrent use of tamoxifen' = {'No concurrent use of tamoxifen'}  }, 
+  reference = 'G_No concurrent use of tamoxifen'
+}
+
+EQUATION:
+logtWT1 = log(WT1/68.7538)
+
+[INDIVIDUAL]
+input = {Base_pop, omega_Base, Cl_pop, omega_Cl, GMA_pop, MTT_pop, Q_pop, omega_Q, Slope_pop, omega_Slope, Tk0_pop, Tlag_pop, V1_pop, omega_V1, V2_pop, omega_V2, beta_DOSE_Cl_pop, beta_DOSE_Q_pop, beta_DOSE_V2_pop, corr_V2_Q, corr_Q_Cl, corr_V2_Cl, corr_Slope_Base, Asian, beta_Base_Asian_G_Caucasian_Others, logtWT1, beta_Q_logtWT1_, beta_V2_logtWT1_, tTAMO, beta_Cl_tTAMO_G_Concurrent_use_of_tamoxifen_}
+
+Asian = {type=categorical, categories={G_Asian, G_Caucasian_Others}}
+tTAMO = {type=categorical, categories={'G_Concurrent use of tamoxifen', 'G_No concurrent use of tamoxifen'}}
+
+DEFINITION:
+Base = {distribution=logNormal, typical=Base_pop, covariate=Asian, coefficient={0, beta_Base_Asian_G_Caucasian_Others}, sd=omega_Base}
+Cl = {distribution=logNormal, typical=Cl_pop, covariate=tTAMO, coefficient={beta_Cl_tTAMO_G_Concurrent_use_of_tamoxifen_, 0}, sd=omega_Cl}
+GMA = {distribution=logNormal, typical=GMA_pop, no-variability}
+MTT = {distribution=logNormal, typical=MTT_pop, no-variability}
+Q = {distribution=logNormal, typical=Q_pop, covariate=logtWT1, coefficient=beta_Q_logtWT1_, sd=omega_Q}
+Slope = {distribution=logNormal, typical=Slope_pop, sd=omega_Slope}
+Tk0 = {distribution=logNormal, typical=Tk0_pop, no-variability}
+Tlag = {distribution=logNormal, typical=Tlag_pop, no-variability}
+V1 = {distribution=logNormal, typical=V1_pop, sd=omega_V1}
+V2 = {distribution=logNormal, typical=V2_pop, covariate=logtWT1, coefficient=beta_V2_logtWT1_, sd=omega_V2}
+beta_DOSE_Cl = {distribution=normal, typical=beta_DOSE_Cl_pop, no-variability}
+beta_DOSE_Q = {distribution=normal, typical=beta_DOSE_Q_pop, no-variability}
+beta_DOSE_V2 = {distribution=normal, typical=beta_DOSE_V2_pop, no-variability}
+correlation = {level=id, r(Q, Cl)=corr_Q_Cl, r(V2, Cl)=corr_V2_Cl, r(V2, Q)=corr_V2_Q, r(Slope, Base)=corr_Slope_Base}
+
+[LONGITUDINAL]
+input = {ay1, by1, by2}
+
+file = 'model/model_generated.txt'
+
+DEFINITION:
+yy1 = {distribution=normal, prediction=Cc, errorModel=combined2(ay1, by1)}
+yy2 = {distribution=normal, prediction=ANC, errorModel=proportional(by2)}
+
+<FIT>
+data = {yy1, yy2}
+model = {yy1, yy2}
+
+<PARAMETER>
+Base_pop = {value=3.57, method=MAP}
+Cl_pop = {value=26.433, method=MAP}
+GMA_pop = {value=0.2235, method=MAP}
+MTT_pop = {value=107, method=MAP}
+Q_pop = {value=81.5, method=MAP}
+Slope_pop = {value=0.0293, method=MAP}
+Tk0_pop = {value=3.4, method=FIXED}
+Tlag_pop = {value=0.403, method=MAP}
+V1_pop = {value=239.492, method=MAP}
+V2_pop = {value=850.144, method=MAP}
+ay1 = {value=1, method=MLE}
+beta_Base_Asian_G_Caucasian_Others = {value=0, method=MLE}
+beta_Cl_tTAMO_G_Concurrent_use_of_tamoxifen_ = {value=0, method=MLE}
+beta_DOSE_Cl_pop = {value=-0.308, method=MAP}
+beta_DOSE_Q_pop = {value=-0.519, method=MAP}
+beta_DOSE_V2_pop = {value=-0.344, method=MAP}
+beta_Q_logtWT1_ = {value=0, method=MLE}
+beta_V2_logtWT1_ = {value=0, method=MLE}
+by1 = {value=0.3, method=MLE}
+by2 = {value=0.3, method=MLE}
+corr_Q_Cl = {value=0.124, method=MLE}
+corr_Slope_Base = {value=0, method=MLE}
+corr_V2_Cl = {value=0.192, method=MLE}
+corr_V2_Q = {value=0.213, method=MLE}
+cy1 = {value=1, method=FIXED}
+cy2 = {value=1, method=FIXED}
+omega_Base = {value=0.16, method=MAP}
+omega_Cl = {value=0.263, method=MAP}
+omega_Q = {value=0.259, method=MAP}
+omega_Slope = {value=0.098, method=MAP}
+omega_V1 = {value=0.925, method=MAP}
+omega_V2 = {value=0.312, method=MAP}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(method = ImportanceSampling)
+plotResult(method = {indfits, parameterdistribution, covariancemodeldiagnosis, covariatemodeldiagnosis, obspred, vpc, residualsscatter, residualsdistribution, randomeffects, saemresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = 'PK_ANC_LU_JCP_2021'
+
