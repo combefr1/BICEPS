@@ -273,7 +273,13 @@ get_logs <- function(jobID, output.dir, tryBjobs=TRUE) {
 
     Submit_time <- .extractFromLog(patterns$submit, log_results)
     Started_time <- .extractFromLog(patterns$start, log_results)
-    
+     if(nchar(Submit_time) == 15){
+      Submit_time <- paste(substring(Submit_time, c(1,7), c(6,16)), collapse="0")
+    }
+    if(nchar(Started_time) == 15){
+      Started_time <- paste(substring(Started_time, c(1,7), c(6,16)), collapse="0")
+    }
+
     Submit_time <- strptime(Submit_time, format = "%a %b %d %H:%M:%S")
     Started_time <- strptime(Started_time, format = "%a %b %d %H:%M:%S")
  
@@ -375,6 +381,11 @@ get_logs <- function(jobID, output.dir, tryBjobs=TRUE) {
   }
   
   WEEKEND <- weekdays(Submit_time) %in% c("Saturday", "Sunday")
+if(!is.na(Ending_time)){
+   if(nchar(Ending_time) == 15){
+     Ending_time <- paste(substring(Ending_time, c(1,7), c(6,16)), collapse="0")
+   }
+ }
 
   Ending_time <- strptime(Ending_time, format = "%a %b %d %H:%M:%S")
   if (!is.na(Started_time)) {
