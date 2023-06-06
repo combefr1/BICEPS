@@ -242,7 +242,9 @@ main <- function(test_type = "small", expert = TRUE, plotFlag = FALSE) {
     "Pending time (s)","Pending time (h)","Pending time (d)",
     "Running time (s)"   , "Running time (h)"   , "Running time (d)"   ,
     "Max diff Est/init (%)", "Max of RSEs (%)"                  
-  ))%>%
+  ))%>%  
+  mutate(Status= case_when(Status == "run time limit"~"Run time limit", 
+                             .default = Status))%>% 
     mutate(Metric = factor(Metric, 
                            levels = c(
                              "CPU Efficiency (%)",
@@ -252,7 +254,7 @@ main <- function(test_type = "small", expert = TRUE, plotFlag = FALSE) {
                              "Running time (s)"   ,"Running time (h)"   ,"Running time (d)"   ,
                              "Max diff Est/init (%)", "Max of RSEs (%)"                  
                            )), 
-           Status = factor(Status, levels =c( "Success", "Failed",  "Running"))
+           Status = factor(Status, levels =c( "Success", "Failed",  "Running", "Run time limit"))
            )
   
   # the first plot is quite difficult to read, so we use only the main metrics
@@ -286,7 +288,7 @@ main <- function(test_type = "small", expert = TRUE, plotFlag = FALSE) {
       ))
       p2 <- ggplot(data = temp2, aes(y = Value, x = CPUR)) +
         geom_line(aes(group = Version,color = Version)) +
-        geom_point(aes(group = Status,shape = Status)) +
+        geom_point() +
         facet_grid(Metric ~ mlxfolder, scales = "free") +
         theme_bw() +
         theme(axis.text.x = element_text(angle = 65, vjust = 1, hjust = 1))
