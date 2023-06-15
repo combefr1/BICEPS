@@ -49,6 +49,9 @@ main <- function(test_type = "small", expert = TRUE, plotFlag = FALSE) {
   output_pdf <- paste0(output_name, ".pdf")
   output_pdf_performance <- paste0(output_name, "_performance.pdf")
   output_pdf_estimation <- paste0(output_name, "_estimation.pdf")
+  output_pdf_var <- paste0(output_name, "_var.pdf")
+  output_pdf_performance_var <- paste0(output_name, "_performance_var.pdf")
+  output_pdf_estimation_var <- paste0(output_name, "_estimation_var.pdf")
   output_csv <- paste0(output_name, ".csv")
   
   # setup output files locations and check out
@@ -57,7 +60,10 @@ main <- function(test_type = "small", expert = TRUE, plotFlag = FALSE) {
     outfile_pdf = file.path(output.dir, output_pdf),
     outfile_pdf_performance = file.path(output.dir, output_pdf_performance),
     outfile_pdf_estimation = file.path(output.dir, output_pdf_estimation),
-    outfile_csv = file.path(output.dir, output_csv)
+    outfile_csv = file.path(output.dir, output_csv), 
+    outfile_pdf_var = file.path(output.dir, output_pdf_var),
+    outfile_pdf_performance_var = file.path(output.dir, output_pdf_performance_var),
+    outfile_pdf_estimation_var = file.path(output.dir, output_pdf_estimation_var)
   )
   
   
@@ -160,8 +166,8 @@ main <- function(test_type = "small", expert = TRUE, plotFlag = FALSE) {
                               Metric == "CPU_Efficiency" ~ "CPU Efficiency (%)",
                               Metric == "Pending_time_seconds" ~ "Pending time (s)",
                               Metric == "Running_time_seconds" ~ "Running time (s)",
-                              Metric == "Params" ~ "Max diff Est/init (%)",
-                              Metric == "RSE" ~ "Max of RSEs (%)",
+                              Metric == "Params" ~ "Mean diff Est/init (%)",
+                              Metric == "RSE" ~ "Mean of RSEs (%)",
                               Metric == "AVG_MEM" ~ "Average Mem (MB)", 
                               Metric == "EFFICIENCY_MEM" ~ "Mem Efficiency (%)",
                               Metric == "CPU_PEAK" ~  "CPU Peak", 
@@ -218,12 +224,13 @@ main <- function(test_type = "small", expert = TRUE, plotFlag = FALSE) {
         factor(paste0("N = ", N, "; n = ", n),
                levels = Labels
         ),
-      Value2 = as.numeric(Value)
+      Value = as.numeric(Value)
     )
   # we now want the mean value over the N replicates for each model/scenario
   Summary_Final_results <- Final_results2 %>%
     group_by(RunSettings, mlxfolder, Status, Metric, Version) %>%
-    summarise(Value = mean(as.numeric(Value2)))%>%mutate(CPUR = RunSettings)
+    summarise(Value = mean(Value))%>%
+    mutate(CPUR = RunSettings)
   
   # get a proper project name, getting rid of all the cluster settings for plotting
   names <- unique(gsub(Final_results2$mlxfolder, pattern = " expert", replacement = ""))
@@ -241,10 +248,10 @@ main <- function(test_type = "small", expert = TRUE, plotFlag = FALSE) {
     "Mem Efficiency (%)", "Max Mem (MB)",
     "Pending time (s)","Pending time (h)","Pending time (d)",
     "Running time (s)"   , "Running time (h)"   , "Running time (d)"   ,
-    "Max diff Est/init (%)", "Max of RSEs (%)"                  
-  ))%>%  
-  mutate(Status= case_when(Status == "run time limit"~"Run time limit", 
-                             .default = Status))%>% 
+    "Mean diff Est/init (%)", "Mean of RSEs (%)"                  
+  ))%>%
+    mutate(Status= case_when(Status == "run time limit"~"Run time limit", 
+                             .default = Status))%>%
     mutate(Metric = factor(Metric, 
                            levels = c(
                              "CPU Efficiency (%)",
@@ -252,11 +259,33 @@ main <- function(test_type = "small", expert = TRUE, plotFlag = FALSE) {
                              "Mem Efficiency (%)", "Max Mem (MB)",
                              "Pending time (s)","Pending time (h)","Pending time (d)",
                              "Running time (s)"   ,"Running time (h)"   ,"Running time (d)"   ,
-                             "Max diff Est/init (%)", "Max of RSEs (%)"                  
+                             "Mean diff Est/init (%)", "Mean of RSEs (%)"                  
                            )), 
            Status = factor(Status, levels =c( "Success", "Failed",  "Running", "Run time limit"))
            )
   
+  #for alternative plotting:
+  Final_results3 <- Final_results2 %>%filter(Metric %in%c(
+     "CPU Efficiency (%)","CPU time (s)" ,"CPU time (h)" ,"CPU time (d)" , 
+     "Mem Efficiency (%)", "Max Mem (MB)",
+     "Pending time (s)","Pending time (h)","Pending time (d)",
+     "Running time (s)"   , "Running time (h)"   , "Running time (d)"   ,
+     "Mean diff Est/init (%)", "Mean of RSEs (%)"                  
+   ))%>%
+     mutate(Status= case_when(Status == "run time limit"~"Run time limit", 
+                              .default = Status))%>%
+     mutate(Metric = factor(Metric, 
+                            levels = c(
+                              "CPU Efficiency (%)",
+                              "CPU time (s)" , "CPU time (h)" ,"CPU time (d)" ,
+                              "Mem Efficiency (%)", "Max Mem (MB)",
+                              "Pending time (s)","Pending time (h)","Pending time (d)",
+                              "Running time (s)"   ,"Running time (h)"   ,"Running time (d)"   ,
+                              "Mean diff Est/init (%)", "Mean of RSEs (%)"                  
+                            )), 
+            Status = factor(Status, levels =c( "Success", "Failed",  "Running", "Run time limit"))
+     )%>%
+    mutate(CPUR = RunSettings)
   # the first plot is quite difficult to read, so we use only the main metrics
   if (plotFlag) {
     pdf(outfiles$outfile_pdf, width = 7, height = 12)
@@ -302,13 +331,72 @@ main <- function(test_type = "small", expert = TRUE, plotFlag = FALSE) {
         grep(Summary_Final_results_short$mlxfolder, pattern = iter),
       ]
       temp3 <- temp%>%filter(Metric%in% c(
-        "Max diff Est/init (%)", "Max of RSEs (%)"                  
+        "Mean diff Est/init (%)", "Mean of RSEs (%)"                  
       ))
       p3 <- ggplot(data = temp3, aes(y = Value, x = CPUR)) +
         geom_line(aes(group = Version,color = Version)) +
         geom_point() +
         facet_grid(Metric ~ mlxfolder, scales = "free") +
         theme_bw() +
+        theme(axis.text.x = element_text(angle = 65, vjust = 1, hjust = 1))
+      print(p3)
+    }
+    dev.off() # close the pdf file / plots
+    
+    
+    ###
+    ###new plots with all data points instead of summaries
+    pdf(outfiles$outfile_pdf_var, width = 7, height = 12)
+    for (iter in names) {
+      temp <- Final_results3[
+        grep(Final_results3$mlxfolder, pattern = iter),
+      ]
+      p1 <- ggplot(data = temp, aes(y = Value, x = CPUR)) +
+        
+        geom_point(aes(group = Version,color = Version)) +
+        facet_grid(Metric ~ mlxfolder, scales = "free") +
+        theme_bw() +
+        geom_vline(xintercept = c(2.5, 5.5), linetype = "dashed", color = "grey")+
+        theme(axis.text.x = element_text(angle = 65, vjust = 1, hjust = 1))
+      print(p1)
+    }
+    dev.off() # close the pdf file / plots
+    
+    pdf(outfiles$outfile_pdf_performance_var, width = 7, height = 10)
+    for (iter in names) {
+      temp <- Final_results3[
+        grep(Final_results3$mlxfolder, pattern = iter),
+      ]
+      temp2 <- temp%>%filter(Metric%in% c(
+        "CPU Efficiency (%)","CPU time (s)" , 
+        "CPU time (h)" ,"CPU time (d)" ,
+        "Mem Efficiency (%)", "Max Mem (MB)",
+        "Pending time (s)","Pending time (h)","Pending time (d)",
+        "Running time (s)", "Running time (h)"   ,"Running time (d)"    
+      ))
+      p2 <- ggplot(data = temp2, aes(y = Value, x = CPUR)) +
+        geom_point(aes(group = Version,color = Version)) +
+        facet_grid(Metric ~ mlxfolder, scales = "free") +
+        theme_bw() +
+        geom_vline(xintercept = c(2.5, 5.5), linetype = "dashed", color = "grey")+
+        theme(axis.text.x = element_text(angle = 65, vjust = 1, hjust = 1))
+      print(p2)
+    }
+    dev.off() # close the pdf file / plots
+    
+    pdf(outfiles$outfile_pdf_estimation_var, width = 7, height = 4)
+    for (iter in names) {
+      temp <- Final_results3[
+        grep(Final_results3$mlxfolder, pattern = iter),
+      ]
+      temp3 <- temp%>%filter(Metric%in% c(
+        "Mean diff Est/init (%)", "Mean of RSEs (%)"                  
+      ))
+      p3 <- ggplot(data = temp3, aes(y = Value, x = CPUR)) +
+        geom_point(aes(group = Version,color = Version)) +
+        facet_grid(Metric ~ mlxfolder, scales = "free") +
+        theme_bw() +
+        geom_vline(xintercept = c(2.5, 5.5), linetype = "dashed", color = "grey")+
         theme(axis.text.x = element_text(angle = 65, vjust = 1, hjust = 1))
       print(p3)
     }
