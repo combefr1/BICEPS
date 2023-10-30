@@ -1,0 +1,83 @@
+<DATAFILE>
+
+[FILEINFO]
+file='../../../home/ubuntu/lixoft/monolix/monolix2023R1/demos/4.joint_models/4.1.continuous_PKPD/data/warfarinPD_data.csv'
+delimiter = comma
+header={id, time, amt, dv, wt, sex, age}
+
+[CONTENT]
+id = {use=identifier}
+time = {use=time}
+amt = {use=amount}
+dv = {use=observation, type=continuous}
+wt = {use=covariate, type=continuous}
+sex = {use=covariate, type=categorical}
+age = {use=covariate, type=continuous}
+
+[SETTINGS]
+dataType = {'dv'=plasma}
+
+<MODEL>
+
+[COVARIATE]
+input = {wt, age, sex}
+
+sex = {type=categorical, categories={'0', '1'}}
+
+[INDIVIDUAL]
+input = {ka_pop, omega_ka, V_pop, omega_V, Cl_pop, omega_Cl, Tlag_pop, omega_Tlag, IC50_pop, omega_IC50, Imax_pop, omega_Imax, R0_pop, omega_R0, kout_pop, omega_kout}
+
+DEFINITION:
+ka = {distribution=logNormal, typical=ka_pop, sd=omega_ka}
+V = {distribution=logNormal, typical=V_pop, sd=omega_V}
+Cl = {distribution=logNormal, typical=Cl_pop, sd=omega_Cl}
+Tlag = {distribution=logNormal, typical=Tlag_pop, sd=omega_Tlag}
+IC50 = {distribution=logNormal, typical=IC50_pop, sd=omega_IC50}
+Imax = {distribution=logitNormal, typical=Imax_pop, sd=omega_Imax}
+R0 = {distribution=logNormal, typical=R0_pop, sd=omega_R0}
+kout = {distribution=logNormal, typical=kout_pop, sd=omega_kout}
+
+[LONGITUDINAL]
+input = {a}
+
+file = 'lib:oral1_1cpt_IndirectModelInhibitionKin_TlagkaVClR0koutImaxIC50.txt'
+
+DEFINITION:
+dv = {distribution=normal, prediction=R, errorModel=constant(a)}
+
+<FIT>
+data = 'dv'
+model = dv
+
+<PARAMETER>
+Cl_pop = {value=0.14, method=MLE}
+IC50_pop = {value=1.063, method=MLE}
+Imax_pop = {value=0.999, method=MLE}
+R0_pop = {value=99.47, method=MLE}
+Tlag_pop = {value=0.821, method=MLE}
+V_pop = {value=8.465999999999999, method=MLE}
+a = {value=1, method=MLE}
+ka_pop = {value=0.61, method=MLE}
+kout_pop = {value=0.0565, method=MLE}
+omega_Cl = {value=0.2641224, method=MLE}
+omega_IC50 = {value=1, method=MLE}
+omega_Imax = {value=1, method=MLE}
+omega_R0 = {value=1, method=MLE}
+omega_Tlag = {value=0.5193568, method=MLE}
+omega_V = {value=0.1367562, method=MLE}
+omega_ka = {value=0.9538483, method=MLE}
+omega_kout = {value=1, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = Linearization)
+logLikelihood(method = Linearization)
+plotResult(method = {indfits, parameterdistribution, covariancemodeldiagnosis, covariatemodeldiagnosis, obspred, vpc, residualsscatter, residualsdistribution, randomeffects, saemresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = 'warfarin_PD_project_job'
+
